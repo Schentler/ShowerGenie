@@ -1,10 +1,10 @@
+import RPi.GPIO as GPIO
 import time
 import datetime
 import paho.mqtt.client as mqtt
 import ssl
 import json
 import _thread
-import RPi.GPIO as GPIO
 import os
 import glob
 
@@ -13,12 +13,20 @@ GPIO.setmode(GPIO.BCM)
 
 # SET GPIO PINS 
 GPIO_REG_SOL_VALVE = 24
+SERVO_HOT = 21  # GPIO pin number for the hot water servo motor
+SERVO_COLD = 20  # GPIO pin number for the cold water servo motor
 
 # Set GPIO direction (IN / OUT)
 GPIO.setup(GPIO_REG_SOL_VALVE, GPIO.OUT)
+GPIO.setup(SERVO_HOT, GPIO.OUT)
+GPIO.setup(SERVO_COLD, GPIO.OUT)
 
 # Initialize status
 GPIO.output(GPIO_REG_SOL_VALVE, GPIO.HIGH)
+servo_pwm_hot = GPIO.PWM(SERVO_HOT, 50)  # 50 Hz frequency for SG90 servo (change if needed)
+servo_pwm_cold = GPIO.PWM(SERVO_COLD, 50)  # 50 Hz frequency for SG90 servo (change if needed)
+servo_pwm_hot.start(2)  # Start with a duty cycle of 2 (0%)
+servo_pwm_cold.start(2)  # Start with a duty cycle of 2 (0%)
 
 # Temperature Sensor Settings
 min_temp = 22.0
@@ -55,11 +63,22 @@ def read_temp():
 def turn_off_shower():
     GPIO.output(GPIO_REG_SOL_VALVE, GPIO.HIGH)
     print("Shower turned off")
+    set_servo_position(servo_pwm_hot, 0)  # Rotate hot water servo to 0% open
+    set_servo_position(servo_pwm_cold, 0)  # Rotate cold water servo to 0% open
 
 # Regular Solenoid Valve - Turn On
 def turn_on_shower():
     GPIO.output(GPIO_REG_SOL_VALVE, GPIO.LOW)
     print("Shower turned on")
+    set_servo_position(servo_pwm_hot, 100)  # Rotate hot water servo to 100% open
+    set_servo_position(servo_pwm_cold, 0)  # Rotate cold water servo to 0% open
+
+# Function to control the servo motor position based on percentage
+def set_servo_position(servo, percentage):
+    # Map the percentage to the appropriate duty cycle (2-57)
+    duty_cycle = 2 + (percentage / 100) * 55
+    servo.ChangeDutyCycle(duty_cycle)
+    time.sleep(0.3)  # Wait for the servo to reach the desired position
 
 def regular_solenoid_valve():
     shower_status = "off"
@@ -101,7 +120,7 @@ client.connect("a1tdnoabcs1ef3-ats.iot.us-east-2.amazonaws.com", 8883, 60)
 def publishData(txt):
     print(txt)
     while True:
-        desired_temp = 31.0  # assigned/hard-coded user desired temp as 29 degrees C
+        desired_temp = 31.0  # assigned/hard-coded user desired temp as 31 degrees C
         shower_status = regular_solenoid_valve()
         
         # Check if temperature is outside safe range
@@ -140,4 +159,3 @@ client.loop_start()
 # Keep the main thread running
 while True:
     time.sleep(1)
-
