@@ -31,15 +31,16 @@ def on_message(client, userdata, msg):
                 set_desired_temperature(desired_temp_str)
 
             # Check and set the guest name if available in the payload
-            guest_name = data.get("guestName")
-            if guest_name:
-                set_guest_name(guest_name)
+            guest_name_payload = data.get("guestName")
+            if guest_name_payload:
+                set_guest_name(guest_name_payload)
 
         elif command == "off":
             # Call the function to turn off the shower
             turn_off_shower()
 
         else:
+            # Handle unrecognized commands here (if needed)
             print("Invalid command received.")
     except json.JSONDecodeError:
         print("Invalid JSON payload received.")
@@ -74,6 +75,8 @@ min_temp = 22.0
 max_temp = 45.0
 desired_temp = 30.0
 previous_temperature = 0.0
+shower_status = "off"
+guest_name = ""
 
 os.system('modprobe w1-gpio')
 os.system('modprobe w1-therm')
@@ -134,13 +137,15 @@ def set_desired_temperature(desired_temp_str):
         print("Invalid desired temperature format. Please use 'XX°C' format.")
 
 # Function to set the guest name (if needed)
-def set_guest_name(guest_name):
+def set_guest_name(name):
+    global guest_name
+    guest_name = name
     print(f"Guest Name: {guest_name}")
     # Implement code here to handle guest name (if needed)
 
 # Function to continuously read temperature and adjust the flow
 def temperature_controller():
-    global previous_temperature
+    global previous_temperature, guest_name, shower_status
     hot_duty_cycle = 29
     cold_duty_cycle = 29
     while True:
@@ -151,6 +156,7 @@ def temperature_controller():
         if cal_temperature < min_temp or cal_temperature > max_temp:
             print("Temperature outside safe range. Shower turned off.")
             turn_off_shower()
+            shower_status = "off"
         else:
             if cal_temperature > desired_temp:
                 # Reduce hot water flow
@@ -172,11 +178,11 @@ def temperature_controller():
             if cal_temperature != previous_temperature:
                 # Prepare the data to be sent
                 data = {
-                "timestamp": datetime.datetime.now().strftime("%m/%d/%y. %H:%M:%S"),
-                "cal_temperature": cal_temperature,
-                "desired_temp": desired_temp,
-                "shower_status": shower_status,
-                "user": guest_name
+                    "timestamp": datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
+                    "cal_temperature": cal_temperature,
+                    "desired_temp": desired_temp,
+                    "shower_status": shower_status,
+                    "user": guest_name
                 }
 
                 # Publish the data to the "raspi/data" topic
@@ -210,4 +216,3 @@ try:
 except KeyboardInterrupt:
     # Clean up GPIO on keyboard interrupt
     GPIO.cleanup()
-
