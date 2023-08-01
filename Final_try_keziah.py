@@ -78,55 +78,14 @@ previous_temperature = 0.0
 shower_status = "off"
 guest_name = ""
 accept_temp_diff = 1.0
-#servo_pos=0
-if desired_temp == 22:
-    servo_pos=52
-if desired_temp == 23:
-    servo_pos=51
-if desired_temp == 24:
-    servo_pos=49
-if desired_temp == 25:
-    servo_pos=48
-if desired_temp == 26:
-    servo_pos=46
-if desired_temp == 27:
-    servo_pos=45
-if desired_temp == 28:
-    servo_pos=43
-if desired_temp == 29:
-    servo_pos=42
-if desired_temp == 30:
-    servo_pos=40
-if desired_temp == 31:
-    servo_pos=39
-if desired_temp == 32:
-    servo_pos=38
-if desired_temp == 33:
-    servo_pos=36
-if desired_temp == 34:
-    servo_pos=35
-if desired_temp == 35:
-    servo_pos=40
-if desired_temp == 36:
-    servo_pos=33
-if desired_temp == 37:
-    servo_pos=32
-if desired_temp == 38:
-    servo_pos=29
-if desired_temp == 39:
-    servo_pos=27
-if desired_temp == 40:
-    servo_pos=26
-if desired_temp == 41:
-    servo_pos=24
-if desired_temp == 42:
-    servo_pos=23
-if desired_temp == 43:
-    servo_pos=21
-if desired_temp == 44:
-    servo_pos=20
-if desired_temp == 45:
-    servo_pos=19
+# Dictionary to map desired temperatures to initial servo positions
+TEMP_TO_SERVO_POS = {
+    22: 52, 23: 51, 24: 49, 25: 48, 26: 46, 27: 45, 28: 43,
+    29: 42, 30: 40, 31: 39, 32: 38, 33: 36, 34: 35, 35: 34,
+    36: 33, 37: 32, 38: 29, 39: 27, 40: 26, 41: 24, 42: 23,
+    43: 21, 44: 20, 45: 19
+}
+servo_pos = TEMP_TO_SERVO_POS[desired_temp]
 
 os.system('modprobe w1-gpio')
 os.system('modprobe w1-therm')
