@@ -63,17 +63,19 @@ GPIO.setup(GPIO_REG_SOL_VALVE, GPIO.OUT)
 GPIO.setup(SERVO_HOT, GPIO.OUT)
 GPIO.setup(SERVO_COLD, GPIO.OUT)
 GPIO.output(GPIO_REG_SOL_VALVE, GPIO.LOW)
+ADJUST_CYCLE = 3
 
 # Initialize servos
 servo_pwm_hot = GPIO.PWM(SERVO_HOT, 50)
 servo_pwm_cold = GPIO.PWM(SERVO_COLD, 50)
 servo_pwm_hot.start(0)
 servo_pwm_cold.start(0)
+servo_pos = 40
 
 # Variable Declaration
 min_temp = 22.0
 max_temp = 45.0
-#desired_temp = 30.0
+desired_temp = 39.0
 previous_temperature = 0.0
 shower_status = "off"
 guest_name = ""
@@ -123,8 +125,8 @@ def turn_on_shower():
     GPIO.output(GPIO_REG_SOL_VALVE, GPIO.LOW)
     shower_status = "on"
     print("Shower turned on")
-    set_servo_position(servo_pwm_hot, servo_pos)
-    set_servo_position(servo_pwm_cold, 57-servo_pos)
+    set_servo_position(servo_pwm_hot, 57 - servo_pos)
+    set_servo_position(servo_pwm_cold, servo_pos)
 
 # Function to control the servo motor position
 def set_servo_position(servo, pwm_signal):     
@@ -132,16 +134,14 @@ def set_servo_position(servo, pwm_signal):
      servo.ChangeDutyCycle(servo_pwm_val)
      time.sleep(0.3)
  
-
 # Function to set the desired temperature
 def set_desired_temperature(desired_temp_str):
     global desired_temp, servo_pos
     try:
         # Extract numerical value from the string and convert to float
         desired_temp = float(desired_temp_str.split("°")[0])
-        print(f"Desired temperature set to {desired_temp}°C")
         # Implement code here to handle desired temperature setting (if needed)
-        # Dictionary to map desired temperatures to initial servo positions
+        # Dictionary to map desired temperatures to initial "cold" servo positions
         TEMP_TO_SERVO_POS = {
             22: 52, 23: 51, 24: 49, 25: 48, 26: 46, 27: 45, 28: 43,
             29: 42, 30: 40, 31: 39, 32: 38, 33: 36, 34: 35, 35: 34,
@@ -162,11 +162,11 @@ def set_guest_name(name):
 # Function to continuously read temperature and adjust the flow
 def temperature_controller():
     global previous_temperature, guest_name, shower_status, servo_pos
-    hot_duty_cycle = servo_pos
-    cold_duty_cycle = 57 - servo_pos
+    hot_duty_cycle = 57 - servo_pos
+    cold_duty_cycle = servo_pos
     while True:
         cal_temperature = read_temp()
-        print(f"Current temp: {cal_temperature}°C, servo_pos: {servo_pos}")
+        print(f"Current temp: {cal_temperature}°C, servo_pos: {servo_pos},Desired temperature set to {desired_temp}°C")
 
         # Check if temperature is outside safe range
         if cal_temperature < min_temp or cal_temperature > max_temp:
@@ -177,17 +177,17 @@ def temperature_controller():
                 if cal_temperature - desired_temp > accept_temp_diff:
                     # Reduce hot water flow
                     if hot_duty_cycle > 1:
-                        hot_duty_cycle -= 5
-                        servo_pos = hot_duty_cycle
+                        hot_duty_cycle -= ADJUST_CYCLE
+                        servo_pos = 57 - hot_duty_cycle
                     if cold_duty_cycle < 57:
-                        cold_duty_cycle += 5
+                        cold_duty_cycle += ADJUST_CYCLE
                 elif desired_temp - cal_temperature > accept_temp_diff :
                     # Increase hot water flow
                     if hot_duty_cycle < 57:
-                        hot_duty_cycle += 5
-                        servo_pos = hot_duty_cycle
+                        hot_duty_cycle += ADJUST_CYCLE
+                        servo_pos = 57 - hot_duty_cycle
                     if cold_duty_cycle > 1:
-                        cold_duty_cycle -= 5
+                        cold_duty_cycle -= ADJUST_CYCLE
                 else:
                     print("Temperature stay within the acceptable difference.")
 
