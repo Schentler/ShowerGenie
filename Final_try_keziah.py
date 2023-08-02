@@ -166,7 +166,7 @@ def temperature_controller():
     cold_duty_cycle = servo_pos
     while True:
         cal_temperature = read_temp()
-        print(f"Current temp: {cal_temperature}°C, servo_pos: {servo_pos},Desired temperature set to {desired_temp}°C")
+        print(f"Current temp: {cal_temperature}°C, Desired temperature set to {desired_temp}°C")
 
         # Check if temperature is outside safe range
         if cal_temperature < min_temp or cal_temperature > max_temp:
@@ -193,9 +193,9 @@ def temperature_controller():
 
                 set_servo_position(servo_pwm_hot, hot_duty_cycle)
                 set_servo_position(servo_pwm_cold, cold_duty_cycle)
-
+                
                 # Check if the current temperature is different from the previous one
-                if cal_temperature != previous_temperature:
+                if cal_temperature != previous_temperature & command == "On":
                     # Prepare the data to be sent
                     data = {
                         "timestamp": datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
