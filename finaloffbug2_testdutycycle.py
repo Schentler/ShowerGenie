@@ -150,7 +150,7 @@ def set_guest_name(name):
 
 # Function to continuously read temperature and adjust the flow
 def temperature_controller():
-    global previous_temperature, guest_name, shower_status
+    global previous_temperature, guest_name, shower_status,cal_temperature
     hot_duty_cycle = 29
     cold_duty_cycle = 29
     duty_cycle = 3
@@ -187,8 +187,6 @@ def temperature_controller():
                 set_servo_position(servo_pwm_hot, hot_duty_cycle)
                 set_servo_position(servo_pwm_cold, cold_duty_cycle)
                  
-                  
-                
                 # Check if the current temperature is different from the previous one
                 if cal_temperature != previous_temperature:
                     # Prepare the data to be sent
@@ -202,10 +200,23 @@ def temperature_controller():
                 
                     # Publish the data to the "raspi/data" topic
                     client.publish("raspi/data", payload=json.dumps(data), qos=0, retain=False)
-
+                
                     # Update the previous temperature
                     previous_temperature = cal_temperature
-                    
+            if shower_status == "off":
+                data = {
+                        "timestamp": datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
+                        "cal_temperature": cal_temperature,
+                        "desired_temperature": desired_temp,
+                        "shower_status": shower_status,
+                        "user": guest_name
+                }
+                
+                    # Publish the data to the "raspi/data" topic
+                client.publish("raspi/data", payload=json.dumps(data), qos=0, retain=False)
+                    # Update the previous temperature
+                previous_temperature = cal_temperature
+                
         print(f"Current temp: {cal_temperature}°C ,Desired Temperature: {desired_temp}")
         time.sleep(1)
 
